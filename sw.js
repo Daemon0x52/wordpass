@@ -1,5 +1,5 @@
 // 单词过关 · 离线缓存 Service Worker
-const CACHE = "wordpass-v5";
+const CACHE = "wordpass-v6";
 const ASSETS = ["./", "./index.html", "./manifest.json", "./icon.png", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", e => {
