@@ -380,30 +380,57 @@ function mergePairs(pairs, source){
 
 // ================= docx 生成 =================
 function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function rpr(bold,sz){
-  return '<w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:eastAsia="宋体"/>'+(bold?'<w:b/>':'')+(sz?'<w:sz w:val="'+sz+'"/><w:szCs w:val="'+sz+'"/>':'')+'</w:rPr>';
+function run(text, bold, sz){
+  return '<w:r><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:eastAsia="宋体"/>'
+    +(bold?'<w:b/>':'')+(sz?'<w:sz w:val="'+sz+'"/><w:szCs w:val="'+sz+'"/>':'')+'</w:rPr>'
+    +'<w:t xml:space="preserve">'+esc(text)+'</w:t></w:r>';
+}
+function para(inner, align, before, after){
+  var ppr='<w:pPr>';
+  if(align) ppr+='<w:jc w:val="'+align+'"/>';
+  if(before||after) ppr+='<w:spacing w:before="'+(before||0)+'" w:after="'+(after||0)+'"/>';
+  ppr+='</w:pPr>';
+  return '<w:p>'+ppr+inner+'</w:p>';
+}
+function cell(text, width, bold, align){
+  return '<w:tc><w:tcPr><w:tcW w:w="'+width+'" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr>'
+    +para(run(text, bold, 21), align||'left', 30, 30)+'</w:tc>';
+}
+function duizhaoTable(words){
+  var tbl='<w:tbl><w:tblPr><w:tblW w:w="10092" w:type="dxa"/><w:tblBorders>'
+    +'<w:top w:val="single" w:sz="4" w:color="888888"/><w:left w:val="single" w:sz="4" w:color="888888"/>'
+    +'<w:bottom w:val="single" w:sz="4" w:color="888888"/><w:right w:val="single" w:sz="4" w:color="888888"/>'
+    +'<w:insideH w:val="single" w:sz="4" w:color="888888"/><w:insideV w:val="single" w:sz="4" w:color="888888"/>'
+    +'</w:tblBorders></w:tblPr>'
+    +'<w:tblGrid><w:gridCol w:w="700"/><w:gridCol w:w="3300"/><w:gridCol w:w="6092"/></w:tblGrid>';
+  tbl+='<w:tr>'+cell('序号',700,true,'center')+cell('英文 / 短语',3300,true,'center')+cell('中文释义',6092,true,'center')+'</w:tr>';
+  words.forEach(function(w,i){
+    tbl+='<w:tr>'+cell(String(i+1),700,false,'center')+cell(w.en,3300,true,'left')+cell(w.cn,6092,false,'left')+'</w:tr>';
+  });
+  return tbl+'</w:tbl>';
+}
+function moxieList(words){
+  var out='';
+  words.forEach(function(w,i){
+    out+=para(run((i+1)+'. ', false, 21)+run(w.cn, false, 21), 'left', 180, 40);
+    out+=para(run('＿'.repeat(48), false, 21), 'left', 0, 140);
+  });
+  return out;
 }
 function makeDocxBlob(mode, words, title){
   var d=new Date();
   var dateStr=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
   var sub = mode==='duizhao' ? ('中英对照 · '+dateStr+' · 共 '+words.length+' 词') : ('根据中文默写英文 · '+dateStr+' · 共 '+words.length+' 词');
   var body='';
-  body+='<w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r>'+rpr(true,30)+'<w:t>'+esc(title||'单词过关')+'</w:t></w:r></w:p>';
-  body+='<w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r>'+rpr(false,20)+'<w:t>'+esc(sub)+'</w:t></w:r></w:p>';
-  function entryRow(i,w,showEn){
-    var html='<w:p><w:r>'+rpr(false,21)+'<w:t>'+i+'. </w:t></w:r>';
-    if(showEn) html+='<w:r>'+rpr(true,21)+'<w:t>'+esc(w.en)+'</w:t></w:r><w:r>'+rpr(false,21)+'<w:t>   '+esc(w.cn)+'</w:t></w:r>';
-    else html+='<w:r>'+rpr(false,21)+'<w:t>'+esc(w.cn)+'  '+'＿'.repeat(22)+'</w:t></w:r>';
-    html+='</w:p>';
-    return html;
-  }
+  body+=para(run(title||'单词过关', true, 30), 'center', 0, 40);
+  body+=para(run(sub, false, 20), 'center', 0, 160);
   if(mode==='duizhao'){
-    words.forEach(function(w,i){ body+=entryRow(i+1,w,true); });
+    body+=duizhaoTable(words);
   } else {
-    words.forEach(function(w,i){ body+=entryRow(i+1,w,false); });
+    body+=moxieList(words);
     body+='<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
-    body+='<w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r>'+rpr(true,28)+'<w:t>参考答案</w:t></w:r></w:p>';
-    words.forEach(function(w,i){ body+=entryRow(i+1,w,true); });
+    body+=para(run('参考答案', true, 28), 'center', 0, 160);
+    body+=duizhaoTable(words);
   }
   var documentXml='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
     +'<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'
