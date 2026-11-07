@@ -412,8 +412,8 @@ function duizhaoTable(words){
 function moxieList(words){
   var out='';
   words.forEach(function(w,i){
-    out+=para(run((i+1)+'. ', false, 21)+run(w.cn, false, 21), 'left', 180, 40);
-    out+=para(run('＿'.repeat(48), false, 21), 'left', 0, 140);
+    out+=para(run((i+1)+'. ', false, 21)+run(w.cn, false, 21), 'left', 100, 20);
+    out+=para(run('＿'.repeat(48), false, 21), 'left', 0, 60);
   });
   return out;
 }
