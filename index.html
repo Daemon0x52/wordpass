@@ -560,7 +560,6 @@ function renderPractice(){
   }else{
     $('#answerInput').addEventListener('keydown',function(e){ if(e.key==='Enter') revealCn(); });
     $('#revealBtn').onclick=revealCn; $('#skipBtn').onclick=nextQuestion;
-    $('#okBtn').onclick=function(){ markAnswer(true); }; $('#badBtn').onclick=function(){ markAnswer(false); };
   }
 }
 function cn2enHTML(w){
@@ -599,6 +598,8 @@ function revealCn(){
     +'<button class="btn btn-green" id="okBtn" style="flex:1;">✓ 我答对了</button>'
     +'<button class="btn btn-red" id="badBtn" style="flex:1;">✗ 我答错了</button></div>';
   $('#revealBtn').style.display='none'; $('#answerInput').disabled=true;
+  $('#okBtn').onclick=function(){ markAnswer(true); };
+  $('#badBtn').onclick=function(){ markAnswer(false); };
 }
 function markAnswer(ok){ var w=pQueue[pIndex]; if(ok) pScore++; else pWrong.push(w); nextQuestion(); }
 function nextQuestion(){ pIndex++; renderPractice(); }
