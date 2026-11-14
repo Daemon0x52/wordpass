@@ -190,6 +190,14 @@ input:focus,select:focus{outline:none; border-color:var(--blue); background:#fff
       <div class="src-panel" id="srcPanel" style="display:none;"></div>
       <button class="btn btn-primary btn-block" id="genBtn" style="margin-top:12px;">🎯 生成清单</button>
     </div>
+    <div class="card" id="lastListCard" style="display:none;">
+      <h2>📌 上次清单 <span id="lastDate" class="badge"></span></h2>
+      <div style="font-size:13px; color:var(--muted); margin-bottom:10px;" id="lastInfo"></div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-primary" style="flex:1;" id="reviewLastBtn">✏️ 温习练习</button>
+        <button class="btn btn-amber" style="flex:1;" id="dlLastMoxie">下载默写单</button>
+      </div>
+    </div>
     <div id="dailyResult"></div>
   </section>
 
@@ -588,6 +596,8 @@ function generateDaily(){
   if(n>pool.length){ toast('词库只有 '+pool.length+' 词'); }
   todayList=shuffle(pool).slice(0,n).map(function(w){ return {en:w.en, cn:w.cn, pos:w.pos||''}; });
   renderDaily();
+  saveLastList();
+  renderLastCard();
 }
 function renderDaily(){
   var box=$('#dailyResult');
@@ -605,18 +615,41 @@ function renderDaily(){
   $('#goPractice').onclick=function(){ pQueue=todayList.slice(); pMode=$('#modeToggle .active').dataset.mode; startPractice(); };
   box.scrollIntoView({behavior:'smooth'});
 }
-function downloadDoc(mode){
-  if(!todayList.length){ toast('先生成清单'); return; }
+function downloadDoc(mode, words){
+  words = words || todayList;
+  if(!words.length){ toast('先生成清单'); return; }
   if(!F){ toast('无法生成 docx'); return; }
   toast('正在生成文档…');
   try{
-    var blob=makeDocxBlob(mode, todayList, '今日单词过关');
+    var blob=makeDocxBlob(mode, words, '单词过关');
     var url=URL.createObjectURL(blob);
     var a=document.createElement('a');
     a.href=url; a.download = mode==='duizhao'?'单词过关_中英对照.docx':'单词过关_默写单.docx';
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(function(){ URL.revokeObjectURL(url); }, 3000);
   }catch(e){ toast('生成失败：'+e.message); }
+}
+function todayStr(){
+  var d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function saveLastList(){
+  try{ localStorage.setItem('wp_last_list', JSON.stringify({date:todayStr(), words:todayList})); }catch(e){}
+}
+function loadLastList(){
+  try{
+    var raw=localStorage.getItem('wp_last_list');
+    if(raw){ var d=JSON.parse(raw); if(d && d.words && d.words.length) return d; }
+  }catch(e){}
+  return null;
+}
+function renderLastCard(){
+  var last=loadLastList();
+  var card=$('#lastListCard');
+  if(!last){ card.style.display='none'; return; }
+  card.style.display='block';
+  $('#lastDate').textContent=last.date||'';
+  $('#lastInfo').textContent='共 '+last.words.length+' 词 · 可温习或重新下载';
 }
 
 // ================= 练习 =================
@@ -760,6 +793,17 @@ function init(){
 
   document.querySelectorAll('.tabbar button').forEach(function(b){ b.onclick=function(){ switchTab(b.dataset.tab); }; });
   $('#genBtn').onclick=generateDaily;
+  renderLastCard();
+  $('#reviewLastBtn').onclick=function(){
+    var last=loadLastList();
+    if(last && last.words){ pQueue=last.words.slice(); pMode=$('#modeToggle .active').dataset.mode; startPractice(); }
+    else { toast('还没有上次清单，先生成一次'); }
+  };
+  $('#dlLastMoxie').onclick=function(){
+    var last=loadLastList();
+    if(last && last.words){ downloadDoc('moxie', last.words); }
+    else { toast('还没有上次清单'); }
+  };
   $('#srcLabel').onclick=function(){
     var p=$('#srcPanel'); var show=p.style.display==='none';
     p.style.display=show?'block':'none';
