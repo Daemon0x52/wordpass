@@ -1,5 +1,5 @@
 // 单词过关 · 离线缓存 Service Worker（网络优先，失败才用缓存）
-const CACHE = "wordpass-v9";
+const CACHE = "wordpass-v10";
 const ASSETS = ["./", "./index.html", "./manifest.json", "./icon.png", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", e => {
